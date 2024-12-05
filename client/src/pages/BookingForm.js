@@ -19,17 +19,45 @@ function BookingForm() {
   useEffect(() => {
     fetch("http://localhost:3001/flights")
       .then((response) => response.json())
-      .then((data) => setFlights(data))
+      .then((data) => {
+        console.log("Flights data (before formatting):", data);
+        // Chuyển đổi mảng thành đối tượng
+        const formattedFlights = data.map((flight) => ({
+          flight_id: flight[0],
+          flight_number: flight[1],
+          departure_airport_name: flight[2],
+          arrival_airport_name: flight[3],
+          available_seats: flight[4],
+        }));
+        console.log("Flights data (after formatting):", formattedFlights);
+        setFlights(formattedFlights);
+      })
       .catch((error) => console.error("Error fetching flights:", error));
   }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    const data = {
+      passengerId: parseInt(passengerId, 10),
+      flightId: parseInt(flightId, 10),
+      seats: parseInt(seats, 10),
+    };
+
+    console.log("Passenger ID:", passengerId);
+    console.log("Flight ID:", flightId);
+    console.log("Seats:", seats);
+
+    // Kiểm tra tính hợp lệ
+    if (isNaN(data.passengerId) || isNaN(data.flightId) || isNaN(data.seats)) {
+      alert("Invalid input. Please ensure all fields are filled correctly.");
+      return;
+    }
+
     fetch("http://localhost:3001/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ passengerId, flightId, seats }),
+      body: JSON.stringify(data),
     })
       .then((response) => response.json())
       .then((data) => alert(data.message || data.error))
@@ -74,8 +102,9 @@ function BookingForm() {
         >
           <option value="">Select a Flight</option>
           {flights.map((flight) => (
-            <option key={flight[0]} value={flight[0]}>
-              {flight[1]} - {flight[2]} to {flight[3]} (ID: {flight[0]})
+            <option key={flight.flight_id} value={flight.flight_id}>
+              {flight.flight_number} - {flight.departure_airport_name} to{" "}
+              {flight.arrival_airport_name} (ID: {flight.flight_id})
             </option>
           ))}
         </select>
