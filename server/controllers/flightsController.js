@@ -85,4 +85,69 @@ const getAirports = async (req, res) => {
 };
 
 
-module.exports = { getFlights, getAirports };
+// Hàm API thêm chuyến bay
+const addFlight = async (req, res) => {
+  const {
+    flight_number,
+    departure_airport_id,
+    arrival_airport_id,
+    departure_time,
+    arrival_time,
+    available_seats,
+  } = req.body;
+
+  // Kiểm tra dữ liệu đầu vào
+  if (
+    !flight_number ||
+    !departure_airport_id ||
+    !arrival_airport_id ||
+    !departure_time ||
+    !arrival_time ||
+    !available_seats
+  ) {
+    return res.status(400).json({
+      success: false,
+      message: "All fields are required.",
+    });
+  }
+
+  let connection;
+
+  try {
+    connection = await getConnection(); // Kết nối tới SQL Server
+
+    // Gọi Stored Procedure ADD_FLIGHT
+    const request = connection.request();
+    request.input("flight_number", sql.NVarChar(10), flight_number);
+    request.input("departure_airport_id", sql.Int, departure_airport_id);
+    request.input("arrival_airport_id", sql.Int, arrival_airport_id);
+    request.input("departure_time", sql.DateTime, departure_time);
+    request.input("arrival_time", sql.DateTime, arrival_time);
+    request.input("available_seats", sql.Int, available_seats);
+
+    // Thực thi Stored Procedure
+    await request.execute("dbo.ADD_FLIGHT");
+
+    res.status(200).json({
+      success: true,
+      message: "Flight added successfully.",
+    });
+  } catch (error) {
+    console.error("Error adding flight:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while adding the flight.",
+      error: error.message,
+    });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (closeError) {
+        console.error("Error closing connection:", closeError);
+      }
+    }
+  }
+};
+
+module.exports = { getFlights, getAirports, addFlight };

@@ -20,6 +20,8 @@ function App() {
     return localStorage.getItem("passengerId") || null;
   });
 
+  const [refreshFlights, setRefreshFlights] = useState(false); // Thêm trạng thái làm mới danh sách chuyến bay
+
   const handleLogin = (userRole) => {
     setIsLoggedIn(true);
     setRole(userRole);
@@ -31,6 +33,10 @@ function App() {
     setRole("");
     setPassengerId(null);
     localStorage.clear();
+  };
+
+  const triggerFlightRefresh = () => {
+    setRefreshFlights((prev) => !prev); // Đổi trạng thái để kích hoạt làm mới danh sách chuyến bay
   };
 
   return (
@@ -47,14 +53,6 @@ function App() {
         <Login onLogin={handleLogin} />
       ) : (
         <div>
-          <div className="row">
-            <div className="col-md-6">
-              <FlightList />
-            </div>
-            <div className="col-md-6">
-              <BookingForm loggedInPassengerId={passengerId} />
-            </div>
-          </div>
           {role === "admin" && (
             <div className="row mt-4">
               <div className="col-md-6">
@@ -65,10 +63,23 @@ function App() {
               </div>
             </div>
           )}
-          <div className="row mt-4">
-            <div className="col-12">
-              <AirportList /> {/* Thêm danh sách sân bay vào giao diện */}
+          <div className="row">
+            <div className="row mt-4">
+              <div className="col-12">
+                <AirportList /> {/* Thêm danh sách sân bay vào giao diện */}
+              </div>
             </div>
+            <div className="col-md-6">
+              <FlightList refresh={refreshFlights} /> {/* Truyền trạng thái làm mới */}
+            </div>
+            {role !== "admin" && (
+              <div className="col-md-6">
+                <BookingForm
+                  loggedInPassengerId={passengerId}
+                  onBookingSuccess={triggerFlightRefresh} // Truyền callback làm mới danh sách chuyến bay
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

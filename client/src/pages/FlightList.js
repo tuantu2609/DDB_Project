@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from "react";
 
-function FlightList() {
+function FlightList({ refresh }) {
   const [flights, setFlights] = useState([]);
 
   useEffect(() => {
     fetch("http://localhost:3001/flights")
       .then((response) => response.json())
       .then((data) => {
-        // Kiểm tra response và sắp xếp flights theo id
         if (data.success && Array.isArray(data.data)) {
           const sortedFlights = data.data.sort((a, b) => a.id - b.id);
           setFlights(sortedFlights);
         }
       })
       .catch((error) => console.error("Error fetching flights:", error));
-  }, []);
+  }, [refresh]); // Lắng nghe thay đổi của refresh
 
   return (
     <div className="container border p-4 rounded shadow-sm bg-light">
@@ -58,3 +57,4 @@ function FlightList() {
 }
 
 export default FlightList;
+

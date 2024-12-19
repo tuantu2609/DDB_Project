@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-function BookingForm({ loggedInPassengerId }) {
+function BookingForm({ loggedInPassengerId, onBookingSuccess }) {
   const [passengerId] = useState(loggedInPassengerId); // Readonly
   const [flightId, setFlightId] = useState("");
   const [seats, setSeats] = useState("");
@@ -33,19 +33,6 @@ function BookingForm({ loggedInPassengerId }) {
       });
   }, []);
 
-  // Xử lý chọn chuyến bay để hiển thị số ghế trống
-  const handleFlightChange = (e) => {
-    const selectedId = e.target.value;
-    setFlightId(selectedId);
-
-    const selectedFlight = flights.find(
-      (flight) => flight.flight_id === parseInt(selectedId, 10)
-    );
-    if (selectedFlight) {
-      setSelectedFlightSeats(selectedFlight.available_seats);
-    }
-  };
-
   // Xử lý submit form đặt vé
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -77,6 +64,7 @@ function BookingForm({ loggedInPassengerId }) {
           setFlightId("");
           setSeats("");
           setSelectedFlightSeats(0);
+          onBookingSuccess(); // Gọi callback để làm mới danh sách chuyến bay
         } else {
           setErrorMessage(data.message || "Failed to book the flight.");
         }
@@ -111,7 +99,7 @@ function BookingForm({ loggedInPassengerId }) {
         <select
           className="form-select"
           value={flightId}
-          onChange={handleFlightChange}
+          onChange={(e) => setFlightId(e.target.value)}
           required
         >
           <option value="">Select a Flight</option>
@@ -144,3 +132,4 @@ function BookingForm({ loggedInPassengerId }) {
 }
 
 export default BookingForm;
+
