@@ -6,7 +6,13 @@ function FlightList() {
   useEffect(() => {
     fetch("http://localhost:3001/flights")
       .then((response) => response.json())
-      .then((data) => setFlights(data))
+      .then((data) => {
+        // Kiểm tra response và sắp xếp flights theo id
+        if (data.success && Array.isArray(data.data)) {
+          const sortedFlights = data.data.sort((a, b) => a.id - b.id);
+          setFlights(sortedFlights);
+        }
+      })
       .catch((error) => console.error("Error fetching flights:", error));
   }, []);
 
@@ -16,26 +22,32 @@ function FlightList() {
       <table className="table table-striped table-bordered">
         <thead className="table-dark">
           <tr>
+            <th>Flight ID</th>
             <th>Flight Number</th>
-            <th>Departure</th>
-            <th>Arrival</th>
-            <th>Seats</th>
+            <th>Departure Airport</th>
+            <th>Arrival Airport</th>
+            <th>Departure Time</th>
+            <th>Arrival Time</th>
+            <th>Available Seats</th>
           </tr>
         </thead>
         <tbody>
           {flights.length === 0 ? (
             <tr>
-              <td colSpan="4" className="text-center">
+              <td colSpan="7" className="text-center">
                 No Flights Available
               </td>
             </tr>
           ) : (
-            flights.map((flight, index) => (
-              <tr key={index}>
-                <td>{flight[0]}</td> {/* flight_number */}
-                <td>{`${flight[1]} (${flight[2]})`}</td> {/* departure_airport_name (departure_location) */}
-                <td>{`${flight[3]} (${flight[4]})`}</td> {/* arrival_airport_name (arrival_location) */}
-                <td>{flight[5]}</td> {/* available_seats */}
+            flights.map((flight) => (
+              <tr key={flight.id}>
+                <td>{flight.id}</td>
+                <td>{flight.flight_number}</td>
+                <td>{flight.departure_airport_id}</td>
+                <td>{flight.arrival_airport_id}</td>
+                <td>{new Date(flight.departure_time).toLocaleString()}</td>
+                <td>{new Date(flight.arrival_time).toLocaleString()}</td>
+                <td>{flight.available_seats}</td>
               </tr>
             ))
           )}

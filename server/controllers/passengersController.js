@@ -1,28 +1,19 @@
-const oracledb = require("oracledb");
-const { getConnection } = require("../db/oracle");
+const sql = require("mssql");
+const { getConnection } = require("../db/mssql");
 
 const getPassengers = async (req, res) => {
   let connection;
 
   try {
-    connection = await getConnection();
+    connection = await getConnection(); // Kết nối tới SQL Server
 
-    // Gọi procedure GET_PASSENGERS_PROC
-    const result = await connection.execute(
-      `BEGIN GET_PASSENGERS_PROC(:result); END;`,
-      {
-        result: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
-      }
-    );
+    // Gọi stored procedure GET_PASSENGERS_PROC
+    const request = connection.request();
 
-    // Lấy dữ liệu từ SYS_REFCURSOR
-    const passengers = [];
-    const resultSet = result.outBinds.result;
-    let row;
-    while ((row = await resultSet.getRow())) {
-      passengers.push(row);
-    }
-    await resultSet.close();
+    const result = await request.execute("dbo.GET_PASSENGERS_PROC"); // Gọi procedure
+
+    // Lấy danh sách hành khách từ bảng trả về
+    const passengers = result.recordset;
 
     res.json(passengers); // Trả về danh sách hành khách
   } catch (error) {
@@ -30,10 +21,13 @@ const getPassengers = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch passengers" });
   } finally {
     if (connection) {
-      await connection.close();
+      try {
+        await connection.close();
+      } catch (closeError) {
+        console.error("Error closing connection:", closeError);
+      }
     }
   }
 };
 
 module.exports = { getPassengers };
-

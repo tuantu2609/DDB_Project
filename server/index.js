@@ -9,10 +9,14 @@ app.use(express.json());
 // Định nghĩa tuyến đường
 const flightsRouter = require("./routes/flights");
 app.use("/flights", flightsRouter);
+const getAirports = require("./routes/airports");
+app.use("/airports", getAirports);
 const bookingsRouter = require("./routes/bookings");
 app.use("/bookings", bookingsRouter);
 const passengersRouter = require("./routes/passengers");
 app.use("/passengers", passengersRouter);
+const userRouter = require("./routes/users");
+app.use("/login", userRouter);
 
 // Middleware xử lý lỗi chung
 app.use((err, req, res, next) => {

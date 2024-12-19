@@ -1,35 +1,58 @@
-const oracledb = require("oracledb");
-const { getConnection } = require("../db/oracle");
+const sql = require("mssql");
+const { getConnection } = require("../db/mssql"); // Hàm kết nối SQL Server
 
-const createBooking = async (req, res) => {
-  const { passengerId, flightId, seats } = req.body;
+const bookFlight = async (req, res) => {
+  const { passengerId, flightId, seats } = req.body; // Lấy dữ liệu từ request body
   let connection;
 
   try {
-    connection = await getConnection(); // Kết nối đến Oracle
-    const query = `BEGIN CREATE_BOOKING_PROC(:passengerId, :flightId, :seats, :result); END;`;
+    // Kiểm tra dữ liệu đầu vào
+    if (!passengerId || !flightId || !seats) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required parameters." });
+    }
 
-    const result = await connection.execute(query, {
-      passengerId,
-      flightId,
-      seats,
-      result: { dir: oracledb.BIND_OUT, type: oracledb.STRING },
-    });
+    // Kết nối tới SQL Server
+    connection = await getConnection();
 
-    if (result.outBinds.result === 'Booking successful') {
-      res.json({ message: result.outBinds.result });
+    // Gọi stored procedure BookFlight
+    const request = connection.request();
+    request.input("p_passenger_id", sql.Int, passengerId); // Truyền tham số IN
+    request.input("p_flight_id", sql.Int, flightId);
+    request.input("p_seats", sql.Int, seats);
+    request.output("p_message", sql.NVarChar(200)); // Truyền tham số OUT
+
+    // Thực thi stored procedure
+    const result = await request.execute("dbo.BookFlight");
+
+    // Nhận thông báo từ OUT parameter
+    const message = result.output.p_message;
+
+    // Kiểm tra kết quả và gửi phản hồi cho client
+    if (message.includes("successfully")) {
+      res.status(200).json({ success: true, message });
+    } else if (message.includes("Error")) {
+      res.status(400).json({ success: false, message });
     } else {
-      res.status(400).json({ error: result.outBinds.result });
+      res.status(404).json({ success: false, message: "Flight not found." });
     }
   } catch (error) {
-    console.error("Error creating booking:", error);
-    res.status(500).json({ error: "Failed to create booking" });
+    console.error("Error booking flight:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while processing the booking.",
+    });
   } finally {
+    // Đóng kết nối
     if (connection) {
-      await connection.close();
+      try {
+        await connection.close();
+      } catch (closeError) {
+        console.error("Error closing connection:", closeError);
+      }
     }
   }
 };
 
-module.exports = { createBooking };
-
+module.exports = { bookFlight };

@@ -1,42 +1,63 @@
 import React, { useState, useEffect } from "react";
 
-function BookingForm() {
-  const [passengerId, setPassengerId] = useState("");
+function BookingForm({ loggedInPassengerId }) {
+  const [passengerId] = useState(loggedInPassengerId); // Readonly
   const [flightId, setFlightId] = useState("");
   const [seats, setSeats] = useState("");
-  const [passengers, setPassengers] = useState([]); // Danh sách hành khách
-  const [flights, setFlights] = useState([]); // Danh sách chuyến bay
+  const [flights, setFlights] = useState([]);
+  const [selectedFlightSeats, setSelectedFlightSeats] = useState(0);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  // Lấy danh sách hành khách từ API
-  useEffect(() => {
-    fetch("http://localhost:3001/passengers")
-      .then((response) => response.json())
-      .then((data) => setPassengers(data))
-      .catch((error) => console.error("Error fetching passengers:", error));
-  }, []);
-
-  // Lấy danh sách chuyến bay từ API
+  // Fetch danh sách chuyến bay từ API
   useEffect(() => {
     fetch("http://localhost:3001/flights")
       .then((response) => response.json())
       .then((data) => {
-        console.log("Flights data (before formatting):", data);
-        // Chuyển đổi mảng thành đối tượng
-        const formattedFlights = data.map((flight) => ({
-          flight_id: flight[0],
-          flight_number: flight[1],
-          departure_airport_name: flight[2],
-          arrival_airport_name: flight[3],
-          available_seats: flight[4],
-        }));
-        console.log("Flights data (after formatting):", formattedFlights);
-        setFlights(formattedFlights);
+        if (data.success && Array.isArray(data.data)) {
+          const formattedFlights = data.data.map((flight) => ({
+            flight_id: flight.id,
+            flight_number: flight.flight_number,
+            departure_airport_id: flight.departure_airport_id,
+            arrival_airport_id: flight.arrival_airport_id,
+            departure_time: new Date(flight.departure_time).toLocaleString(),
+            arrival_time: new Date(flight.arrival_time).toLocaleString(),
+            available_seats: flight.available_seats,
+          }));
+          setFlights(formattedFlights);
+        }
       })
-      .catch((error) => console.error("Error fetching flights:", error));
+      .catch((error) => {
+        console.error("Error fetching flights:", error);
+        setErrorMessage("Failed to fetch flights. Please try again later.");
+      });
   }, []);
 
+  // Xử lý chọn chuyến bay để hiển thị số ghế trống
+  const handleFlightChange = (e) => {
+    const selectedId = e.target.value;
+    setFlightId(selectedId);
+
+    const selectedFlight = flights.find(
+      (flight) => flight.flight_id === parseInt(selectedId, 10)
+    );
+    if (selectedFlight) {
+      setSelectedFlightSeats(selectedFlight.available_seats);
+    }
+  };
+
+  // Xử lý submit form đặt vé
   const handleSubmit = (e) => {
     e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    if (parseInt(seats, 10) > selectedFlightSeats) {
+      setErrorMessage(
+        `Only ${selectedFlightSeats} seats are available for this flight.`
+      );
+      return;
+    }
 
     const data = {
       passengerId: parseInt(passengerId, 10),
@@ -44,24 +65,26 @@ function BookingForm() {
       seats: parseInt(seats, 10),
     };
 
-    console.log("Passenger ID:", passengerId);
-    console.log("Flight ID:", flightId);
-    console.log("Seats:", seats);
-
-    // Kiểm tra tính hợp lệ
-    if (isNaN(data.passengerId) || isNaN(data.flightId) || isNaN(data.seats)) {
-      alert("Invalid input. Please ensure all fields are filled correctly.");
-      return;
-    }
-
     fetch("http://localhost:3001/bookings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
       .then((response) => response.json())
-      .then((data) => alert(data.message || data.error))
-      .catch((error) => console.error("Error booking flight:", error));
+      .then((data) => {
+        if (data.success) {
+          setSuccessMessage(data.message);
+          setFlightId("");
+          setSeats("");
+          setSelectedFlightSeats(0);
+        } else {
+          setErrorMessage(data.message || "Failed to book the flight.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error booking flight:", error);
+        setErrorMessage("An error occurred while booking the flight.");
+      });
   };
 
   return (
@@ -70,59 +93,46 @@ function BookingForm() {
       className="border p-4 rounded shadow-sm bg-light"
     >
       <h2 className="mb-4">Book a Flight</h2>
+      {errorMessage && <div className="alert alert-danger">{errorMessage}</div>}
+      {successMessage && (
+        <div className="alert alert-success">{successMessage}</div>
+      )}
       <div className="mb-3">
-        <label htmlFor="passengerId" className="form-label">
-          Passenger ID:
-        </label>
-        <select
-          id="passengerId"
-          className="form-select"
+        <label className="form-label">Passenger ID:</label>
+        <input
+          type="text"
+          className="form-control"
           value={passengerId}
-          onChange={(e) => setPassengerId(e.target.value)}
-          required
-        >
-          <option value="">Select a Passenger</option>
-          {passengers.map((passenger) => (
-            <option key={passenger[0]} value={passenger[0]}>
-              {passenger[0]} - {passenger[1]}
-            </option>
-          ))}
-        </select>
+          readOnly
+        />
       </div>
       <div className="mb-3">
-        <label htmlFor="flightId" className="form-label">
-          Flight ID:
-        </label>
+        <label className="form-label">Flight:</label>
         <select
-          id="flightId"
           className="form-select"
           value={flightId}
-          onChange={(e) => setFlightId(e.target.value)}
+          onChange={handleFlightChange}
           required
         >
           <option value="">Select a Flight</option>
           {flights.map((flight) => (
             <option key={flight.flight_id} value={flight.flight_id}>
-              {flight.flight_number} - {flight.departure_airport_name} to{" "}
-              {flight.arrival_airport_name} (ID: {flight.flight_id})
+              {flight.flight_number} - From {flight.departure_airport_id} to{" "}
+              {flight.arrival_airport_id} ({flight.departure_time} -{" "}
+              {flight.arrival_time}) | Seats Available:{" "}
+              {flight.available_seats}
             </option>
           ))}
         </select>
       </div>
       <div className="mb-3">
-        <label htmlFor="seats" className="form-label">
-          Seats:
-        </label>
+        <label className="form-label">Seats:</label>
         <input
           type="number"
-          id="seats"
           className="form-control"
           value={seats}
-          min="1" // Giới hạn giá trị không nhỏ hơn 1
-          onChange={(e) => {
-            const value = parseInt(e.target.value, 10);
-            setSeats(value > 0 ? value : 1); // Đảm bảo giá trị luôn >= 1
-          }}
+          min="1"
+          onChange={(e) => setSeats(e.target.value)}
           required
         />
       </div>
