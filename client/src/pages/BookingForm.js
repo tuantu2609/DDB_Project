@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-
-function BookingForm({ loggedInPassengerId, onBookingSuccess }) {
+function BookingForm({ loggedInPassengerId }) {
   const [passengerId] = useState(loggedInPassengerId); // Readonly
   const [flightId, setFlightId] = useState("");
   const [seats, setSeats] = useState("");
@@ -33,6 +32,18 @@ function BookingForm({ loggedInPassengerId, onBookingSuccess }) {
       });
   }, []);
 
+  // Xử lý chọn chuyến bay để hiển thị số ghế trống
+  const handleFlightChange = (e) => {
+    const selectedId = e.target.value;
+    setFlightId(selectedId);
+    const selectedFlight = flights.find(
+      (flight) => flight.flight_id === parseInt(selectedId, 10)
+    );
+    if (selectedFlight) {
+      setSelectedFlightSeats(selectedFlight.available_seats);
+    }
+  };
+
   // Xử lý submit form đặt vé
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -64,7 +75,6 @@ function BookingForm({ loggedInPassengerId, onBookingSuccess }) {
           setFlightId("");
           setSeats("");
           setSelectedFlightSeats(0);
-          onBookingSuccess(); // Gọi callback để làm mới danh sách chuyến bay
         } else {
           setErrorMessage(data.message || "Failed to book the flight.");
         }
@@ -99,7 +109,7 @@ function BookingForm({ loggedInPassengerId, onBookingSuccess }) {
         <select
           className="form-select"
           value={flightId}
-          onChange={(e) => setFlightId(e.target.value)}
+          onChange={handleFlightChange}
           required
         >
           <option value="">Select a Flight</option>
@@ -107,8 +117,7 @@ function BookingForm({ loggedInPassengerId, onBookingSuccess }) {
             <option key={flight.flight_id} value={flight.flight_id}>
               {flight.flight_number} - From {flight.departure_airport_id} to{" "}
               {flight.arrival_airport_id} ({flight.departure_time} -{" "}
-              {flight.arrival_time}) | Seats Available:{" "}
-              {flight.available_seats}
+              {flight.arrival_time}) | Seats Available: {flight.available_seats}
             </option>
           ))}
         </select>
@@ -132,4 +141,3 @@ function BookingForm({ loggedInPassengerId, onBookingSuccess }) {
 }
 
 export default BookingForm;
-
