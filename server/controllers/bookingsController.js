@@ -1,35 +1,30 @@
 const sql = require("mssql");
-const { getConnection } = require("../db/mssql"); // Hàm kết nối SQL Server
+const { getConnection } = require("../db/mssql");
 
 const bookFlight = async (req, res) => {
-  const { passengerId, flightId, seats } = req.body; // Lấy dữ liệu từ request body
+  const { passengerId, flightId, seats } = req.body;
   let connection;
 
   try {
-    // Kiểm tra dữ liệu đầu vào
+
     if (!passengerId || !flightId || !seats) {
       return res
         .status(400)
         .json({ success: false, message: "Missing required parameters." });
     }
 
-    // Kết nối tới SQL Server
     connection = await getConnection();
 
-    // Gọi stored procedure BookFlight
     const request = connection.request();
-    request.input("p_passenger_id", sql.Int, passengerId); // Truyền tham số IN
+    request.input("p_passenger_id", sql.Int, passengerId);
     request.input("p_flight_id", sql.Int, flightId);
     request.input("p_seats", sql.Int, seats);
-    request.output("p_message", sql.NVarChar(200)); // Truyền tham số OUT
+    request.output("p_message", sql.NVarChar(200));
 
-    // Thực thi stored procedure
     const result = await request.execute("dbo.BookFlight");
 
-    // Nhận thông báo từ OUT parameter
     const message = result.output.p_message;
 
-    // Kiểm tra kết quả và gửi phản hồi cho client
     if (message.includes("successfully")) {
       res.status(200).json({ success: true, message });
     } else if (message.includes("Error")) {
@@ -44,7 +39,6 @@ const bookFlight = async (req, res) => {
       message: "An error occurred while processing the booking.",
     });
   } finally {
-    // Đóng kết nối
     if (connection) {
       try {
         await connection.close();

@@ -5,7 +5,6 @@ function AirportList() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Gọi API để lấy danh sách sân bay
     fetch("http://localhost:3001/airports")
       .then((response) => response.json())
       .then((data) => {

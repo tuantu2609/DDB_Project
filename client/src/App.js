@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import FlightList from "./pages/FlightList";
 import BookingForm from "./pages/BookingForm";
-import FlightForm from "./pages/FlightForm";
-import PassengerForm from "./pages/PassengerForm";
 import Login from "./pages/Login";
 import AirportList from "./pages/AirportList"; // Import AirportList
 
@@ -56,16 +54,16 @@ function App() {
           {role === "admin" && (
             <div className="row mt-4">
               <div className="col-md-6">
-                <FlightForm />
+                <p>Comming soon...</p>
               </div>
               <div className="col-md-6">
-                <PassengerForm />
+                <p>Comming soon...</p>
               </div>
             </div>
           )}
           <div className="row mt-4">
             <div className="col-12">
-              <AirportList /> {/* Thêm danh sách sân bay vào giao diện */}
+              <AirportList />
             </div>
           </div>
         </div>

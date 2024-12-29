@@ -18,7 +18,6 @@ function Login({ onLogin }) {
       .then((response) => response.json())
       .then((result) => {
         if (result.success) {
-          // Lưu thông tin đăng nhập vào localStorage
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("role", result.role);
           localStorage.setItem("passengerId", result.passengerId);

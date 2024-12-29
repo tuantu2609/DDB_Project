@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 function BookingForm({ loggedInPassengerId }) {
-  const [passengerId] = useState(loggedInPassengerId); // Readonly
+  const [passengerId] = useState(loggedInPassengerId);
   const [flightId, setFlightId] = useState("");
   const [seats, setSeats] = useState("");
   const [flights, setFlights] = useState([]);
   const [selectedFlightSeats, setSelectedFlightSeats] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [isBooking, setIsBooking] = useState(false); 
 
-  // Fetch danh sách chuyến bay từ API
   useEffect(() => {
     fetch("http://localhost:3001/flights")
       .then((response) => response.json())
@@ -32,7 +32,6 @@ function BookingForm({ loggedInPassengerId }) {
       });
   }, []);
 
-  // Xử lý chọn chuyến bay để hiển thị số ghế trống
   const handleFlightChange = (e) => {
     const selectedId = e.target.value;
     setFlightId(selectedId);
@@ -44,16 +43,17 @@ function BookingForm({ loggedInPassengerId }) {
     }
   };
 
-  // Xử lý submit form đặt vé
   const handleSubmit = (e) => {
     e.preventDefault();
     setErrorMessage("");
     setSuccessMessage("");
+    setIsBooking(true);
 
     if (parseInt(seats, 10) > selectedFlightSeats) {
       setErrorMessage(
         `Only ${selectedFlightSeats} seats are available for this flight.`
       );
+      setIsBooking(false); 
       return;
     }
 
@@ -78,10 +78,12 @@ function BookingForm({ loggedInPassengerId }) {
         } else {
           setErrorMessage(data.message || "Failed to book the flight.");
         }
+        setIsBooking(false); 
       })
       .catch((error) => {
         console.error("Error booking flight:", error);
         setErrorMessage("An error occurred while booking the flight.");
+        setIsBooking(false); 
       });
   };
 
@@ -133,8 +135,8 @@ function BookingForm({ loggedInPassengerId }) {
           required
         />
       </div>
-      <button type="submit" className="btn btn-primary">
-        Book
+      <button type="submit" className="btn btn-primary" disabled={isBooking}>
+        {isBooking ? "Booking..." : "Book"}
       </button>
     </form>
   );
